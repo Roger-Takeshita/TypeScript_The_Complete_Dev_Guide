@@ -18,6 +18,10 @@
   - [Void and Never](#void-and-never)
   - [Destructuring With Annotations](#destructuring-with-annotations)
   - [Annotations Around Objects](#annotations-around-objects)
+- [Arrays](#arrays)
+- [Tuples](#tuples)
+- [Interfaces](#interfaces)
+- [Classes](#classes)
 
 <!-- End Table of Contents -->
 
@@ -243,4 +247,179 @@ const { age, name: firstName }: { age: number; name: string } = profile;
 const {
   coords: { lat, lng },
 }: { coords: { lat: number; lng: number } } = profile;
+```
+
+## Arrays
+
+[☰ Contents](#table-of-contents)
+
+Array where each element is some consistent type of value.
+
+- Why do we care?
+
+  - TS can do type inference when extracting values from an array
+  - TS can prevent us from adding incompatible values to the array
+  - We can get help with `map`, `forEach`, `reduce` functions
+  - Flexible - arrays can still contain multiple different types
+
+- Where to use typed arrays?
+
+  - Any time we need to represent a collection of records with some arbitrary sort order
+
+```typescript
+const carMakers: string[] = ["ford", "tyota", "chevy"];
+const dates = [new Date(), new Date(), new Date()];
+
+// Two dimensional array
+const carsByMake: string[][] = [["f150"], ["corola"], ["camaro"]];
+
+// Help with inference when extracting values
+const car = carMakers[0];
+const myCar = carMakers.pop();
+
+// Prevent incompatible values
+carMakers.push(100); //Argument of type 'number' is not assignable to parameter of type 'string'.
+
+// Help with `map`
+carMakers.map((car: string): string => {
+  return car.toUpperCase();
+});
+
+// Flexible types
+const importantDates: (Date | string)[] = [new Date()];
+importantDates.push("2023-10-10");
+importantDates.push(new Date());
+```
+
+## Tuples
+
+[☰ Contents](#table-of-contents)
+
+Array-like structure where each element represents some property of a record
+
+![](./assets/images/2023-07-17-09-37-52.png)
+
+```typescript
+const drink = {
+  color: "brown",
+  carbonated: true,
+  sugar: 40,
+};
+
+// Tuple
+const pepsi: [string, boolean, number] = ["brown", true, 40];
+
+pepsi[0] = 40; // Type 'number' is not assignable to type 'string'.
+
+// Type alias
+type Drink = [string, boolean, number];
+
+const sprite: Drink = ["white", true, 30];
+```
+
+## Interfaces
+
+[☰ Contents](#table-of-contents)
+
+General strategy for reusable code in TS
+
+- Create functions that accept arguments that are types with interfaces
+- Objects/classes can decide to `implement` a given interface to work with a function
+
+```typescript
+interface Vehicle {
+  name: string;
+  year: Date;
+  broken: boolean;
+  summary(): string;
+}
+
+interface Reportable {
+  summary(): string;
+}
+
+const oldCivic = {
+  name: "civic",
+  year: new Date(),
+  broken: true,
+  summary() {
+    return `Name: ${this.name}`;
+  },
+};
+
+const drink2 = {
+  color: "brown",
+  carbonated: true,
+  sugar: 40,
+  summary() {
+    return `My drink has ${this.sugar} grams of sugar`;
+  },
+};
+
+const printSummary = (item: Reportable): void => {
+  console.log(item.summary());
+};
+
+printSummary(oldCivic);
+printSummary(drink2);
+```
+
+## Classes
+
+[☰ Contents](#table-of-contents)
+
+- TypeScript Class vs JavaScript Class
+
+  - **Modifiers**
+    - `public`: this method can be called any where, any time
+    - `private`: this method can only be called by other methods in `this` class
+    - `protected`: this method can be called by other methods in `this` class, or by other methods in child classes
+
+```typescript
+class Vehicle {
+  color: string;
+
+  constructor(color: string) {
+    this.color = color;
+  }
+
+  protected honk(): void {
+    console.log("beep");
+  }
+}
+
+class VehicleShortcut {
+  constructor(public color: string) {}
+
+  protected honk(): void {
+    console.log("beep");
+  }
+}
+
+const vehicle = new Vehicle("red");
+console.log(vehicle.color);
+
+const vehicle2 = new VehicleShortcut("red");
+console.log(vehicle2.color);
+
+class Car extends Vehicle {
+  constructor(
+    public wheels: number,
+    color: string,
+  ) {
+    super(color);
+  }
+
+  private drive(): void {
+    console.log("vroom");
+  }
+
+  startDrivingProcess(): void {
+    this.drive();
+    this.honk();
+  }
+}
+
+const car1 = new Car(4, "orange");
+car1.startDrivingProcess();
 ```
