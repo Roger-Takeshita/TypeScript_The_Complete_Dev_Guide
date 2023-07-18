@@ -8,6 +8,8 @@
 <!-- Begin Table of Contents GFM -->
 
 - [Links](#links)
+- [Config](#config)
+  - [Run Compiler](#run-compiler)
 - [What is a Type System?](#what-is-a-type-system)
   - [Type](#type)
 - [Type Annotations in Action](#type-annotations-in-action)
@@ -21,7 +23,9 @@
 - [Arrays](#arrays)
 - [Tuples](#tuples)
 - [Interfaces](#interfaces)
+- [Type Guards](#type-guards)
 - [Classes](#classes)
+  - [Abstract Classes](#abstract-classes)
 
 <!-- End Table of Contents -->
 
@@ -31,6 +35,29 @@
 
 - [Typescript: The Complete Developer's Guide](https://www.udemy.com/course/typescript-the-complete-developers-guide)
 - [Json Place Holder](https://jsonplaceholder.typicode.com/)
+
+## Config
+
+[☰ Contents](#table-of-contents)
+
+Create a new TypeScript Config
+
+```bash
+  tsc --init
+```
+
+### Run Compiler
+
+[☰ Contents](#table-of-contents)
+
+To run the TypeScript compiler, use `tsc` command
+TypeScript will search and use `tsconfig.json` configuration
+
+- Watch Mode
+
+  ```bash
+    tsc -w
+  ```
 
 ## What is a Type System?
 
@@ -364,6 +391,52 @@ printSummary(oldCivic);
 printSummary(drink2);
 ```
 
+## Type Guards
+
+[☰ Contents](#table-of-contents)
+
+- **typeof**
+
+  - Narrow type of value to a primitive type
+    - number
+    - string
+    - boolean
+    - symbol
+
+- **instanceof**
+
+  - Narrow down every other type of value
+  - Every other value that is create with a constructor function
+
+```typescript
+class Sorter {
+  constructor(public collection: number[] | string) {}
+
+  sort(): number[] | string {
+    const { length } = this.collection;
+
+    if (this.collection instanceof Array) {
+      // collection === []
+      for (let i = 0; i < length; i++) {
+        for (let j = 0; j < length - i - 1; j++) {
+          if (this.collection[j] > this.collection[j + 1]) {
+            const leftHand = this.collection[j];
+            this.collection[j] = this.collection[j + 1];
+            this.collection[j + 1] = leftHand;
+          }
+        }
+      }
+      return this.collection;
+    }
+
+    return this.collection;
+  }
+}
+
+const sorter = new Sorter([10, 3, -5, 0]);
+console.log(sorter.sort());
+```
+
 ## Classes
 
 [☰ Contents](#table-of-contents)
@@ -423,3 +496,212 @@ class Car extends Vehicle {
 const car1 = new Car(4, "orange");
 car1.startDrivingProcess();
 ```
+
+### Abstract Classes
+
+- Can't be used to create an object directly
+- Only used as a parent class
+- Can contain real implementation for some methods
+- The implemented methods can refer to other methods that don't actually exist yet (we still have to provide names and types for the un-implemented methods)
+- Can make child classes promise to implement some other method
+
+- **Interfaces vs Inheritance/Abstract Class**
+
+  - Interfaces
+
+    - Sets up a contract between different classes
+    - Use when we have a very different different objects that we want to work together
+    - Promotes loose coupling
+
+  - Inheritance/Abstract Class
+
+    - Sets up a contract between different classes
+    - Use when we are trying to build up a definition of an object
+    - Strongly couples classes together
+
+- Abstract Class
+
+  ```typescript
+  // Abstract class
+  export abstract class Sorter {
+    abstract length: number;
+    abstract compare(leftIdx: number, rightIdx: number): boolean;
+    abstract swap(leftIdx: number, rightIdx: number): void;
+
+    sort(): void {
+      const { length } = this;
+
+      for (let i = 0; i < length; i++) {
+        for (let j = 0; j < length - i - 1; j++) {
+          if (this.compare(j, j + 1)) {
+            this.swap(j, j + 1);
+          }
+        }
+      }
+    }
+  }
+  ```
+
+- Other classes
+
+  ```typescript
+  import { Sorter } from "./Sorter";
+
+  export class NumberCollection extends Sorter {
+    constructor(public data: number[]) {
+      super();
+    }
+
+    // Getter
+    get length(): number {
+      return this.data.length;
+    }
+
+    compare(leftIdx: number, rightIdx: number): boolean {
+      return this.data[leftIdx] > this.data[rightIdx];
+    }
+
+    swap(leftIdx: number, rightIdx: number): void {
+      const leftHand = this.data[leftIdx];
+      this.data[leftIdx] = this.data[rightIdx];
+      this.data[rightIdx] = leftHand;
+    }
+  }
+  ```
+
+  ```typescript
+  import { Sorter } from "./Sorter";
+
+  export class CharactersCollection extends Sorter {
+    constructor(public data: string) {
+      super();
+    }
+
+    // Getter
+    get length(): number {
+      return this.data.length;
+    }
+
+    compare(leftIdx: number, rightIdx: number): boolean {
+      return (
+        this.data[leftIdx].toLowerCase() > this.data[rightIdx].toLowerCase()
+      );
+    }
+
+    swap(leftIdx: number, rightIdx: number): void {
+      const characters = this.data.split("");
+      const leftHand = characters[leftIdx];
+      characters[leftIdx] = characters[rightIdx];
+      characters[rightIdx] = leftHand;
+      this.data = characters.join("");
+    }
+  }
+  ```
+
+  ```typescript
+  import { Sorter } from "./Sorter";
+
+  class Node {
+    next: Node | null = null;
+
+    constructor(public data: number) {}
+  }
+
+  export class LinkedList extends Sorter {
+    head: Node | null = null;
+    private len: number;
+
+    constructor() {
+      super();
+      this.len = 0;
+    }
+
+    add(data: number): void {
+      const node = new Node(data);
+
+      if (!this.head) {
+        this.head = node;
+        return;
+      }
+
+      let tail = this.head;
+      if (!this.len) this.len = 1;
+
+      while (tail.next) {
+        tail = tail.next;
+      }
+
+      tail.next = node;
+      this.len += 1;
+    }
+
+    // Getter
+    get length(): number {
+      return this.len;
+    }
+
+    at(idx: number): Node {
+      if (!this.head) throw new Error("Idx out of bounds");
+
+      let count = 0;
+      let node: Node | null = this.head;
+
+      while (node) {
+        if (count === idx) return node;
+        count += 1;
+        node = node.next;
+      }
+
+      throw new Error("Idx out of bounds");
+    }
+
+    compare(leftIdx: number, rightIdx: number): boolean {
+      if (!this.head) throw new Error("List is empty");
+      return this.at(leftIdx).data > this.at(rightIdx).data;
+    }
+
+    swap(leftIdx: number, rightIdx: number): void {
+      const leftNode = this.at(leftIdx);
+      const rightNode = this.at(rightIdx);
+
+      const leftHand = leftNode.data;
+      leftNode.data = rightNode.data;
+      rightNode.data = leftHand;
+    }
+
+    print(): void {
+      if (!this.head) return;
+
+      let node: Node | null = this.head;
+
+      while (node) {
+        console.log(node.data);
+        node = node.next;
+      }
+    }
+  }
+  ```
+
+- Index
+
+  ```typescript
+  import { NumberCollection } from "./NumberCollection";
+  import { CharactersCollection } from "./CharactersCollection";
+  import { LinkedList } from "./LinkedList";
+
+  const numberCollection = new NumberCollection([10, 3, -5, 0]);
+  numberCollection.sort();
+  console.log(numberCollection);
+
+  const charCollection = new CharactersCollection("Xaayb");
+  charCollection.sort();
+  console.log(charCollection);
+
+  const linkedList = new LinkedList();
+  linkedList.add(500);
+  linkedList.add(-10);
+  linkedList.add(-3);
+  linkedList.add(4);
+  linkedList.sort();
+  linkedList.print();
+  ```
