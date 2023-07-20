@@ -26,6 +26,10 @@
 - [Type Guards](#type-guards)
 - [Classes](#classes)
   - [Abstract Classes](#abstract-classes)
+- [Enum](#enum)
+- [Type Assertion](#type-assertion)
+- [Generics](#generics)
+  - [Interface Approach](#interface-approach)
 
 <!-- End Table of Contents -->
 
@@ -705,3 +709,222 @@ car1.startDrivingProcess();
   linkedList.sort();
   linkedList.print();
   ```
+
+## Enum
+
+[☰ Contents](#table-of-contents)
+
+- Follow near-identical syntax rules as normal objects
+- Creates an object with the same keys and values when converted from TS to JS
+- Primary goal is to signal to other engineers that these are all closely related values
+- Use whenever we have a small fixed set of values that are all closely related and known at compile time
+
+  ```typescript
+  enum MatchResult {
+    HomeWin = "H",
+    AwayWin = "A",
+    Draw = "D",
+  }
+  ```
+
+## Type Assertion
+
+[☰ Contents](#table-of-contents)
+
+```typescript
+import fs from "fs";
+import { MatchResult } from "./MatchResult";
+import { dateStringToDate } from "./utils";
+
+type Data = [Date, string, string, number, number, MatchResult, string];
+
+export class CsvFileReader {
+  public data: Data[] = [];
+
+  constructor(public filename: string) {}
+
+  read(): void {
+    this.data = fs
+      .readFileSync(this.filename, { encoding: "utf-8" })
+      .split("\n")
+      .map((row: string): string[] => row.split(","))
+      .map((item: string[]): Data => {
+        return [
+          dateStringToDate(item[0]),
+          item[1],
+          item[2],
+          parseInt(item[3]),
+          parseInt(item[4]),
+          item[5] as MatchResult,
+          item[6],
+        ];
+      });
+  }
+}
+```
+
+## Generics
+
+[☰ Contents](#table-of-contents)
+
+- Like function arguments, but for types in class/function definition
+- Allow us to define the type of a property/argument/return at a future point
+- Used heavily when writing reusable code
+
+  ```typescript
+  import fs from "fs";
+
+  export abstract class CsvFileReader<T> {
+    public data: T[] = [];
+
+    constructor(public filename: string) {}
+
+    abstract mapRow(item: string[]): T;
+
+    read(): void {
+      this.data = fs
+        .readFileSync(this.filename, { encoding: "utf-8" })
+        .split("\n")
+        .map((row: string): string[] => row.split(","))
+        .map(this.mapRow);
+    }
+  }
+  ```
+
+  ```typescript
+  import { CsvFileReader } from "./CsvFileReader";
+  import { MatchResult } from "./MatchResult";
+  import { dateStringToDate } from "./utils";
+
+  type MatchData = [Date, string, string, number, number, MatchResult, string];
+
+  export class MatchReader extends CsvFileReader<MatchData> {
+    mapRow(item: string[]): MatchData {
+      return [
+        dateStringToDate(item[0]),
+        item[1],
+        item[2],
+        parseInt(item[3]),
+        parseInt(item[4]),
+        item[5] as MatchResult,
+        item[6],
+      ];
+    }
+  }
+  ```
+
+  ```typescript
+  import { MatchReader } from "./MatchReader";
+  import { MatchResult } from "./MatchResult";
+
+  const reader = new MatchReader("football.csv");
+  reader.read();
+  let manUnitedWins = 0;
+
+  for (let match of reader.data) {
+    const [date, homeTeam, otherTeam, homeScore, otherScore, winner, other] =
+      match;
+
+    if (homeTeam === "Man United" && winner === MatchResult.HomeWin)
+      manUnitedWins += 1;
+
+    switch (true) {
+      case homeTeam === "Man United" &&
+        (winner === MatchResult.HomeWin || winner === MatchResult.AwayWin):
+        manUnitedWins += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  console.log(`Man United won ${manUnitedWins} games`);
+  ```
+
+### Interface Approach
+
+[☰ Contents](#table-of-contents)
+
+```typescript
+import fs from "fs";
+
+export class CsvFileReader {
+  data: string[][] = [];
+
+  constructor(public filename: string) {}
+
+  read(): void {
+    this.data = fs
+      .readFileSync(this.filename, {
+        encoding: "utf-8",
+      })
+      .split("\n")
+      .map((row: string): string[] => {
+        return row.split(",");
+      });
+  }
+}
+```
+
+```typescript
+import { dateStringToDate } from "./utils/utils";
+import { MatchResult } from "./types/MatchResult";
+
+type MatchData = [Date, string, string, number, number, MatchResult, string];
+
+interface DataReader {
+  read(): void;
+  data: string[][];
+}
+
+export class MatchReader {
+  matches: MatchData[] = [];
+
+  constructor(public reader: DataReader) {}
+
+  load(): void {
+    this.reader.read();
+    this.matches = this.reader.data.map((item): MatchData => {
+      return [
+        dateStringToDate(item[0]),
+        item[1],
+        item[2],
+        parseInt(item[3]),
+        parseInt(item[4]),
+        item[5] as MatchResult,
+        item[6],
+      ];
+    });
+  }
+}
+```
+
+```typescript
+import { MatchReader } from "./MatchReader";
+import { CsvFileReader } from "./CsvFileReader";
+import { MatchResult } from "./types/MatchResult";
+
+const csvFilleReader = new CsvFileReader("football.csv");
+const matchReader = new MatchReader(csvFilleReader);
+matchReader.load();
+let manUnitedWins = 0;
+
+for (let match of matchReader.matches) {
+  const [date, homeTeam, otherTeam, homeScore, otherScore, winner, other] =
+    match;
+
+  if (homeTeam === "Man United" && winner === MatchResult.HomeWin)
+    manUnitedWins += 1;
+
+  switch (true) {
+    case homeTeam === "Man United" &&
+      (winner === MatchResult.HomeWin || winner === MatchResult.AwayWin):
+      manUnitedWins += 1;
+      break;
+    default:
+      break;
+  }
+}
+
+console.log(`Man United won ${manUnitedWins} games`);
+```
