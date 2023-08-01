@@ -6,7 +6,7 @@ export class Attributes<T> {
     };
 
     set(update: T): void {
-        this.data = update;
+        this.data = { ...this.data, ...update };
     }
 
     getAll(): T {

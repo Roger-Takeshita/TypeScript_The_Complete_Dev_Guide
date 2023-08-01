@@ -1,10 +1,17 @@
-import { User } from './models/User';
+import { UserList } from './views/UserList';
+import { Collection } from './models/Collection';
+import { User, UserProps } from './models/User';
 
-// const user = User.buildUser({ id: 1, name: 'Mike Cabecinha', age: 7 });
-const user = User.buildUser({ id: 1 });
+const url = 'http://localhost:3000/users';
+const users = new Collection(url, (json: UserProps) => {
+    return User.buildUser(json);
+});
 
-user.on('change', () => console.log({ event: 'change', user }));
-user.on('save', () => console.log({ event: 'save', user }));
+users.on('change', () => {
+    const root = document.getElementById('root');
+    if (root) {
+        new UserList(root, users).render();
+    }
+});
 
-// user.save();
-user.fetch();
+users.fetch();
