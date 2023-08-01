@@ -1,57 +1,55 @@
-import axios, { AxiosResponse } from 'axios';
+import { Eventing } from './Eventing';
+import { Sync } from './Sync';
+import { Attributes } from './Attributes';
+import { AxiosResponse } from 'axios';
 
-const userRoute = 'http://localhost:3000/users';
+const url = 'http://localhost:3000/users';
 
-interface UserProps {
+export interface UserProps {
     id?: number;
     name?: string;
     age?: number;
 }
 
-type Callback = () => void;
-
 export class User {
-    events: { [key: string]: Callback[] } = {};
+    public events: Eventing = new Eventing();
+    public sync: Sync<UserProps> = new Sync<UserProps>(url);
+    public attributes: Attributes<UserProps>;
 
-    constructor(private data: UserProps) {}
+    constructor(attrs: UserProps) {
+        this.attributes = new Attributes<UserProps>(attrs);
+    }
 
-    get(propName: string): number | string {
-        return this.data[propName];
+    get on() {
+        return this.events.on;
+    }
+
+    get trigger() {
+        return this.events.trigger;
+    }
+
+    get get() {
+        return this.attributes.get;
     }
 
     set(update: UserProps): void {
-        Object.assign(this.data, update);
-    }
-
-    on(eventName: string, callback: Callback): void {
-        const handlers = this.events[eventName] || [];
-        handlers.push(callback);
-        this.events[eventName] = handlers;
-    }
-
-    trigger(eventName: string): void {
-        const handlers = this.events[eventName];
-
-        if (!handlers || !handlers.length) return;
-
-        handlers.forEach((handler) => {
-            handler();
-        });
+        this.attributes.set(update);
+        this.events.trigger('change');
     }
 
     async fetch(): Promise<void> {
-        const response: AxiosResponse = await axios.get(`${userRoute}/${this.get('id')}`);
+        const id = this.attributes.get('id');
+        if (typeof id !== 'number') throw new Error('Cannot fetch without an id');
+        const response: AxiosResponse = await this.sync.fetch(id);
         this.set(response.data);
     }
 
     async save(): Promise<void> {
-        const id = this.get('id');
-        if (id) {
-            const update: AxiosResponse = await axios.put(`${userRoute}/${id}`, this.data);
-            this.set(update.data);
-        } else {
-            const newUser: AxiosResponse = await axios.post(`${userRoute}`, this.data);
-            this.set(newUser.data);
+        try {
+            await this.sync.save(this.attributes.getAll());
+            this.trigger('save');
+        } catch (e) {
+            this.trigger('error');
         }
     }
 }

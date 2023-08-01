@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "start:db": "json-server -w -db.json",
+        "start:db": "json-server -w db.json",
         "start:parcel": "parcer index.html"
     },
     "devDependencies": {

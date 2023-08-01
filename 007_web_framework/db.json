@@ -2,13 +2,23 @@
   "users": [
     {
       "id": 1,
-      "name": "Mike",
-      "age": 7
+      "name": "Mike Cabecinha",
+      "age": -1
     },
     {
       "name": "Emily",
       "age": 0.3,
       "id": 2
+    },
+    {
+      "name": "Emily",
+      "age": 0.3,
+      "id": 3
+    },
+    {
+      "name": "Emily",
+      "age": 0.3,
+      "id": 4
     }
   ]
 }

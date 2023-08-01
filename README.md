@@ -33,6 +33,8 @@
     - [Assertions](#assertions)
   - [Functions](#functions)
   - [Constrains](#constrains)
+  - [Generic Constrains - keyof](#generic-constrains---keyof)
+  - [Delegation](#delegation)
 
 <!-- End Table of Contents -->
 
@@ -1029,3 +1031,148 @@ printHousesOrCars([new House(), new Car()]);
 printHousesOrCars<House>([new House(), new House()]);
 printHousesOrCars<Car>([new Car(), new Car()]);
 ```
+
+### Generic Constrains - keyof
+
+[☰ Contents](#table-of-contents)
+
+```typescript
+import { UserProps } from "./User";
+
+export class Attributes<T> {
+  constructor(private data: T) {}
+
+  get<K extends keyof T>(key: K): T[K] {
+    return this.data[key];
+  }
+
+  set(update: T): void {
+    Object.assign(this.data, update);
+  }
+}
+
+const attrs = new Attributes<UserProps>({
+  id: 5,
+  age: 20,
+  name: "John",
+});
+
+const name = attrs.get("name");
+const id = attrs.get("id");
+const age = attrs.get("age");
+```
+
+### Delegation
+
+[☰ Contents](#table-of-contents)
+
+![](./assets/images/2023-07-31-16-49-22.png)
+
+- Getters
+
+  ```typescript
+  class Person {
+    constructor(
+      public firstName: string,
+      public lastName: string,
+    ) {}
+
+    get fullName(): string {
+      return `${this.firstName} ${this.lastName}`;
+    }
+  }
+
+  const person = new Person("Roger", "Takeshita");
+  console.log(person.fullName);
+  ```
+
+- Passthrough
+
+  ```typescript
+  import { Eventing } from "./Eventing";
+  import { Sync } from "./Sync";
+  import { Attributes } from "./Attributes";
+
+  const url = "http://localhost:3000/users";
+
+  export interface UserProps {
+    id?: number;
+    name?: string;
+    age?: number;
+  }
+
+  export class User {
+    public events: Eventing = new Eventing();
+    public sync: Sync<UserProps> = new Sync<UserProps>(url);
+    public attributes: Attributes<UserProps>;
+
+    constructor(attrs: UserProps) {
+      this.attributes = new Attributes<UserProps>(attrs);
+    }
+
+    get on() {
+      return this.events.on;
+    }
+
+    get trigger() {
+      return this.events.trigger;
+    }
+
+    get get() {
+      return this.attributes.get;
+    }
+  }
+  ```
+
+- **this**
+
+  - References anything to the left side, in this case `colors`
+
+  ```javascript
+  const colors = {
+    color: "red",
+    printColor() {
+      console.log(this.color);
+    },
+  };
+
+  colors.printColor();
+  // red
+  ```
+
+  ```javascript
+  const colors = {
+    color: "red",
+    printColor() {
+      console.log(this.color);
+    },
+  };
+
+  const printColor = colors.printColor;
+  printColor();
+
+  // /Users/roger-that/Documents/Codes/TypeScript_The_Complete_Dev_Guide/007_web_framework/src/index.ts:10
+  //   console.log(this.color);
+  //                    ^
+  ```
+
+  - In this case it's throwing an error, because it's like we are referencing `undefined.color`
+
+- Fixing `Attributes` class to work with passthrough
+
+  - Instead of using a `normal function`, we need to use an `arrow function` to reference **this** to where the function is defined
+
+  ```typescript
+  // Normal function
+  export class Attributes<T> {
+    constructor(private data: T) {}
+
+    get<K extends keyof T>(key: K): T[K] {
+      return this.data[key];
+    }
+
+    set(update: T): void {
+      this.data = update;
+    }
+  }
+  ```
