@@ -35,6 +35,12 @@
   - [Constrains](#constrains)
   - [Generic Constrains - keyof](#generic-constrains---keyof)
   - [Delegation](#delegation)
+- [Decorators](#decorators)
+  - [Property Descriptor](#property-descriptor)
+  - [Decorator Factory](#decorator-factory)
+  - [Decorator Around Properties](#decorator-around-properties)
+  - [Parameter Decorator](#parameter-decorator)
+  - [Class Decorator](#class-decorator)
 
 <!-- End Table of Contents -->
 
@@ -1215,3 +1221,167 @@ const age = attrs.get("age");
     }
   }
   ```
+
+## Decorators
+
+[☰ Contents](#table-of-contents)
+
+- Functions that can be used to modify/change/anything different properties/methods in the class.
+- Not the same as JavaScript decorators
+- Used inside/on classes only
+- Understanding the order in which decorators are ran are the key to Understanding them
+- **Experimental**
+
+```typescript
+class Boat {
+  color: string = "red";
+
+  get formattedColor(): string {
+    return `this boats color is ${this.color}`;
+  }
+
+  @testDecorator
+  pilot(): void {
+    console.log("swish");
+  }
+}
+
+function testDecorator(target: any, key: string): void {
+  console.log("Target:", target);
+  console.log("Key:", key);
+}
+```
+
+Decorators on a property, method, accessor
+
+- First argument is the **prototype** of the object
+- Second argument is the key of the property/method/accessor on the object
+- Third argument is the prototype descriptor
+- Decorators are applied when the code for this class is ran (**not when an instance is created**)
+
+### Property Descriptor
+
+[☰ Contents](#table-of-contents)
+
+| Property Descriptor for Methods |                          Description                           |
+| :-----------------------------: | :------------------------------------------------------------: |
+|            writable             |          whether or not this property can be changed           |
+|           enumerable            | whether or not this property get looped over by a `for .. in`  |
+|              value              |                         Current value                          |
+|          configurable           | Property definition can be changed and property can be deleted |
+
+![](./assets/images/2023-08-02-15-30-52.png)
+
+![](./assets/images/2023-08-02-15-33-06.png)
+
+```typescript
+class Boat {
+  @logError
+  pilot(): void {
+    throw new Error();
+  }
+}
+
+function logError(target: any, key: string, desc: PropertyDescriptor): void {
+  const method = desc.value;
+  desc.value = function () {
+    try {
+      method();
+    } catch (e) {
+      console.log("Ops, boat was sunk");
+    }
+  };
+}
+
+new Boat().pilot();
+```
+
+### Decorator Factory
+
+[☰ Contents](#table-of-contents)
+
+`Decorator Factory`, It's a normal function that returns a decorator
+
+```typescript
+class Boat {
+  @logError("Ops boat was sunk in ocean")
+  pilot(): void {
+    ...
+  }
+}
+
+function logError(errorMessage: string) {
+  return function (target: any, key: string, desc: PropertyDescriptor): void {
+    const method = desc.value;
+    desc.value = function () {
+      try {
+        method();
+      } catch (e) {
+        console.log(errorMessage);
+      }
+    };
+  };
+}
+
+new Boat().pilot();
+```
+
+### Decorator Around Properties
+
+[☰ Contents](#table-of-contents)
+
+- We cannot read a property of the instance of the class (eg: string, boolean)
+
+```typescript
+class Boat {
+    @testDecorator
+    color: string = 'red';
+
+    @testDecorator
+    get formattedColor(): string {
+      ...
+    }
+}
+
+function testDecorator(target: any, key: string) {
+    console.log({ location: 'testDecorator', target, key });
+}
+
+new Boat().pilot();
+```
+
+### Parameter Decorator
+
+[☰ Contents](#table-of-contents)
+
+```typescript
+class Boat {
+    @logError('Ops boat was sunk in ocean')
+    pilot(@parameterDecorator speed: string, @parameterDecorator generateWake: boolean): void {
+      ...
+    }
+}
+
+function parameterDecorator(target: any, key: string, idx: number) {
+    console.log({ location: 'parameterDecorator', target, key, idx });
+}
+
+new Boat().pilot('fast', true);
+```
+
+### Class Decorator
+
+[☰ Contents](#table-of-contents)
+
+```typescript
+@classDecorator
+class Boat {
+  ...
+}
+
+function classDecorator(constructor: typeof Boat) {
+    console.log({ location: 'classDecorator', constructor });
+}
+
+new Boat().pilot('fast', true);
+```
