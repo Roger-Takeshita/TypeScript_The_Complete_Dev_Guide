@@ -41,6 +41,7 @@
   - [Decorator Around Properties](#decorator-around-properties)
   - [Parameter Decorator](#parameter-decorator)
   - [Class Decorator](#class-decorator)
+  - [Express Decorators](#express-decorators)
 
 <!-- End Table of Contents -->
 
@@ -1385,3 +1386,70 @@ function classDecorator(constructor: typeof Boat) {
 
 new Boat().pilot('fast', true);
 ```
+
+### Express Decorators
+
+[☰ Contents](#table-of-contents)
+
+- Node executes our code
+- Class definition read in - decorators are executed
+- Decorators associate route configuration info with the method by using metadata
+  - `metadata`
+    - Proposed feature to be added to JavaScript (and thus, TS)
+    - Snippets of info that can be tied to a method, property, or class definition
+    - Can be used for super custom stuff
+    - TypeScript will (optionally) provide type information as metadata
+    - Read and written using the reflect-metadata package
+      - `npm i reflect-metadata`
+- All method decorators run
+- Class decorator of `@controller` runs last
+- Class decorator reads metadata from each method, adds complete route definitions to router
+
+  ```javascript
+  import "reflect-metadata";
+
+  const plane = {
+    color: "red",
+  };
+
+  Reflect.defineMetadata("note", "hi there", plane);
+  Reflect.defineMetadata("height", 10, plane);
+  Reflect.defineMetadata("note", "hi there", plane, "color");
+  console.log(plane);
+
+  const note = Reflect.getMetadata("note", plane);
+  const height = Reflect.getMetadata("height", plane);
+  const color = Reflect.getMetadata("note", plane, "color");
+
+  console.log({ note, height, color });
+  ```
+
+  ```typescript
+  import "reflect-metadata";
+
+  @printMetadata
+  class Plane {
+    color: string = "red";
+
+    @markFunction("Hello World")
+    fly(): void {
+      console.log("vrrrrrr");
+    }
+  }
+
+  function markFunction(secretInfo: string) {
+    return function (target: any, key: string) {
+      Reflect.defineMetadata("secret", secretInfo, target, key);
+    };
+  }
+
+  function printMetadata(constructor: typeof Plane) {
+    for (const key in constructor.prototype) {
+      const secret = Reflect.getMetadata("secret", constructor.prototype, key);
+      console.log(secret);
+    }
+  }
+
+  const secret = Reflect.getMetadata("secret", Plane.prototype, "fly");
+  console.log(secret);
+  ```
